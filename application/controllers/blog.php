@@ -32,6 +32,7 @@ class Blog extends CI_Controller
 				'blog_key_A' => $key['key_A'],
 				'blog_key_B' => $key['key_B'],
 				'blog_owner' => $post['owner_id'],
+				'sudo_server' => base_url(),
 			)
 		);
 		$insert_id = $this->db->insert_id();
