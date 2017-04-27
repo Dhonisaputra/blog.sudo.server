@@ -20,6 +20,10 @@
  */
 	define('ENVIRONMENT', 'development');
 	date_default_timezone_set('Asia/Jakarta');
+
+	header('Access-Control-Allow-Origin: *');
+	header('Access-Control-Allow-Methods: GET, POST');
+	header("Access-Control-Allow-Headers: X-Requested-With");
 /*
  *---------------------------------------------------------------
  * ERROR REPORTING
