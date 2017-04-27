@@ -67,7 +67,7 @@ class Blog extends CI_Controller
 		$time = $get['time'];		
 		$owner_id = $get['id'];	
 
-		$where = array('blog_key' => $token, 'owner_id' => $owner_id);
+		$where = array('blog_key' => $token, 'blog_owner' => $owner_id);
 		$data = $this->blog_model->get_blog('*', $where)->result_array();
 
 		if(count($data) > 0)
