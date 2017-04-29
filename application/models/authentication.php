@@ -68,5 +68,17 @@ class Authentication extends CI_Model
 		}
 	}
 
+	public function create_new_token($public)
+	{
+		require_once(APPPATH.'libraries/profiling/Pengguna.php');
+		$this->auth = new Pengguna;
+		$this->db->insert('generated_token', array('is_used' => 0));
+		$token_id = $this->db->insert_id();
+		$uniqid = uniqid($token_id,true);
+		$token = $this->auth->encrypt($token_id, $public, $uniqid,true);
+		$this->db->update('generated_token', array('api_key' => $uniqid, 'token' => $token));
+		return array('token' => $token);
+	}
+
 	
 }

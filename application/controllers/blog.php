@@ -32,7 +32,7 @@ class Blog extends CI_Controller
 				'blog_key_A' => $key['key_A'],
 				'blog_key_B' => $key['key_B'],
 				'blog_owner' => $post['owner_id'],
-				'sudo_server' => base_url(),
+				'remote_server' => base_url(),
 			)
 		);
 		$insert_id = $this->db->insert_id();
@@ -100,7 +100,7 @@ class Blog extends CI_Controller
 					"owner_key" 	=> $owner['owner_key'],
 					"blog_key" 	=> $data['blog_key'],
 					"double_server" => $data['double_server'] == 0? false : true,
-					"web_url" 		=> $data['web_url'],
+					"blog_server" 		=> $data['blog_server'],
 					"processing_server" => $data['processing_server'],
 					"handling_server" 	=> $data['handling_server'],
 					"trends" 			=> $data['trends'],
@@ -128,6 +128,98 @@ class Blog extends CI_Controller
 			force_download($name, $file);
 			/*header('Content-disposition: attachment; filename='.$owner['owner_key'].$data['blog_id'].'.sql');
 			echo json_encode($sql);*/
+		}
+	}
+
+	public function save_blog_settings()
+	{
+		$this->load->library('curl');
+		$post = $this->input->post();
+		$post['settings']['remote_server'] = base_url();
+		$post['settings']['version'] = '1.0';
+
+		$settings = $post['settings'];
+		
+
+		$web = rtrim($settings['processing_server'], '/').'/';
+		$ping = $web.'blog/ping?remote';
+		$web .= 'install/process_save_settings_database?remote';
+
+		$isUp = $this->curl->simple_post($ping);
+		if($isUp != FALSE)
+		{
+			$isUp = json_decode($isUp,true);
+			$setDB = $this->curl->simple_post($web, $post['settings']);
+			$this->blog_model->update_blog(
+				array(
+						'processing_server' 	=> $post['settings']['processing_server'],
+						'blog_server' 			=> $post['settings']['blog_server'],
+						'is_installed' 			=> 1,
+						'processing_server_ip' 	=> $isUp['REMOTE_ADDR'],
+						'remote_server' 		=> base_url(),
+					),
+				array('blog_key' => $post['settings']['blog_key']) 
+			);
+		}
+
+	}
+
+	public function is_blog_available($u = '', $sys = FALSE)
+	{
+		$this->load->library('curl');
+		$web = isset($_GET['u'])? $this->input->get('u') : $u;
+		if($web == ''){
+			if($this->isAjax)
+			{
+				header('http/1.0 500 Error. insufficient parameters');
+			}else
+			{
+				show_error('insufficient parameters');
+			}
+			return false;
+		}
+		$web = rtrim($web, '/').'/';
+		$web .= 'blog/ping';
+
+		$isUp = $this->curl->simple_post($web);
+		if($sys == TRUE)
+		{
+			echo $isUp;
+		}else if($this->isAjax || $sys == FALSE)
+		{
+			return json_decode($isUp,true);
+		}
+	}
+
+	public function insert_user()
+	{
+		$this->load->library('curl');
+		$post = $this->input->post();
+		$data = $this->blog_model->get_blog('*', $post['where']);
+
+		if(count($data->result_array()) > 0)
+		{
+			$data = $data->row_array();
+			$web = $data['processing_server'];
+			$web = rtrim($web, '/').'/';
+			$web .= 'users/curl_create_new_users';
+			$token = $this->authentication->create_new_token($data['blog_id']);
+
+			// $post['user']['token'] = $token['token'];
+			$post = array(
+					'token' => $token,
+					'user' => $post['user']
+				);
+			// print_r($post['user']);
+			$isDone = $this->curl->simple_post($web, $post);
+			var_dump($isDone);
+			if(!$isDone)
+			{
+				header('http/1.0 Add user error');
+			}else
+			{
+
+			}
 		}
 	}
 
