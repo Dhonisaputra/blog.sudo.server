@@ -86,9 +86,9 @@ class Blog extends CI_Controller
 		}
 	}
 
-	public function component_download_json_client()
+	public function component_json_client()
 	{
-		$token = $this->input->get('token');
+		$token = $this->input->post('token');
 		$where = array('blog_key' => $token);
 		$data = $this->blog_model->get_blog('*', $where);
 		if(count($data->result_array()) > 0)
@@ -97,18 +97,23 @@ class Blog extends CI_Controller
 			$owner = $this->owner_model->get_owner('*', array('owner_id' => $data['blog_owner'] ) )->row_array();
 			
 			$json = array(
-					"owner_key" 	=> $owner['owner_key'],
-					"blog_key" 	=> $data['blog_key'],
-					"double_server" => $data['double_server'] == 0? false : true,
-					"blog_server" 		=> $data['blog_server'],
-					"processing_server" => $data['processing_server'],
-					"handling_server" 	=> $data['handling_server'],
+					"owner_key" 		=> $owner['owner_key'],
+					"blog_key" 			=> $data['blog_key'],
+					"double_server" 	=> $data['double_server'] == 0? false : true,
+					"blog_server" 		=> rtrim($data['blog_server'], '/').'/',
+					"processing_server" => rtrim($data['processing_server'], '/').'/',
+					"handling_server" 	=> rtrim($data['handling_server'], '/').'/',
 					"trends" 			=> $data['trends'],
 				);
-			header('Content-disposition: attachment; filename=configuration.json');
-			header('Content-type: application/json');
 			echo json_encode($json);
+
 		}
+	}
+	public function component_download_json_client()
+	{
+		header('Content-disposition: attachment; filename=configuration.json');
+		header('Content-type: application/json');
+		$this->component_json_client();
 	}
 
 	public function component_download_sql_client()

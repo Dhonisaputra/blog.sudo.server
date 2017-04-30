@@ -17,7 +17,7 @@ class Authentication extends CI_Model
 
 	public function do_authorize($post)
 	{
-		if(!isset($_GET['using_auth']) || $_GET['using_auth'] != 0)
+		if(!isset($_GET['using_auth']) || (int) $_GET['using_auth'] != 0)
 		{
 			$this->authorize 	= $this->owner_model->get_credential($post['credential']['administrator'], $post['credential']['source']);
 			if($this->authorize['need_auth'] == true && !$this->authorize['is_auth'])
