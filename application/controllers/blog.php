@@ -88,7 +88,7 @@ class Blog extends CI_Controller
 
 	public function component_json_client()
 	{
-		$token = $this->input->post('token');
+		$token = $this->input->get('token');
 		$where = array('blog_key' => $token);
 		$data = $this->blog_model->get_blog('*', $where);
 		if(count($data->result_array()) > 0)
@@ -97,18 +97,22 @@ class Blog extends CI_Controller
 			$owner = $this->owner_model->get_owner('*', array('owner_id' => $data['blog_owner'] ) )->row_array();
 			
 			$json = array(
-					"owner_key" 		=> $owner['owner_key'],
-					"blog_key" 			=> $data['blog_key'],
-					"double_server" 	=> $data['double_server'] == 0? false : true,
-					"blog_server" 		=> rtrim($data['blog_server'], '/').'/',
+					"owner_key" 	=> $owner['owner_key'],
+					"blog_key" 	=> $data['blog_key'],
+					"double_server" => $data['double_server'] == 0? false : true,
+					"blog_server" 		=> $data['blog_server'],
 					"processing_server" => rtrim($data['processing_server'], '/').'/',
 					"handling_server" 	=> rtrim($data['handling_server'], '/').'/',
 					"trends" 			=> $data['trends'],
 				);
+			
 			echo json_encode($json);
-
+		}else
+		{
+			header('http/1.0 500 error no blog found!');
 		}
 	}
+
 	public function component_download_json_client()
 	{
 		header('Content-disposition: attachment; filename=configuration.json');
@@ -145,7 +149,6 @@ class Blog extends CI_Controller
 
 		$settings = $post['settings'];
 		
-
 		$web = rtrim($settings['processing_server'], '/').'/';
 		$ping = $web.'blog/ping?remote';
 		$web .= 'install/process_save_settings_database?remote';
@@ -154,7 +157,11 @@ class Blog extends CI_Controller
 		if($isUp != FALSE)
 		{
 			$isUp = json_decode($isUp,true);
-			$setDB = $this->curl->simple_post($web, $post['settings']);
+			$setDB = json_decode($this->curl->simple_post($web, $post['settings']),true);
+			if($setDB == FALSE || $setDB['code'] == 500)
+			{
+				header('http/1.0 500 set database!');
+			}
 			$this->blog_model->update_blog(
 				array(
 						'processing_server' 	=> $post['settings']['processing_server'],
@@ -165,6 +172,10 @@ class Blog extends CI_Controller
 					),
 				array('blog_key' => $post['settings']['blog_key']) 
 			);
+		}else
+		{
+				header('http/1.0 500 error on ping!');
+
 		}
 
 	}
@@ -216,15 +227,16 @@ class Blog extends CI_Controller
 					'user' => $post['user']
 				);
 			// print_r($post['user']);
-			$isDone = $this->curl->simple_post($web, $post);
-			var_dump($isDone);
-			if(!$isDone)
+			echo $this->curl->simple_post($web, $post);
+/*			$isDone = json_decode( $this->curl->simple_post($web, $post), true);
+			if($isDone == FALSE || $isDone['code'] == 500)
 			{
-				header('http/1.0 Add user error');
+				echo json_encode(array('code'=>500));
 			}else
 			{
+				echo json_encode(array('code'=>200));
 
-			}
+			}*/
 		}
 	}
 
