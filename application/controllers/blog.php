@@ -214,7 +214,7 @@ class Blog extends CI_Controller
 					$web = rtrim($blog['processing_server'], '/').'/';
 					$web.= 'blog/uninstall';
 					$data = array();
-					if($post['also_remove_blog'] == true)
+					if($post['uninstall_blog'] == true)
 					{
 						$data['type'] = 'uninstall';
 						$this->curl->simple_post($web, $data);
@@ -227,7 +227,7 @@ class Blog extends CI_Controller
 					// remove blog from owner blog-list
 					if($post['uninstall_all'] == true)
 					{
-						$this->blog_owner->remove_blog($post['where']);
+						$this->blog_model->remove_blog($post['where']);
 					}else
 					{
 						// just reset blog data
