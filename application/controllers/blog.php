@@ -183,14 +183,68 @@ class Blog extends CI_Controller
 	}
 	public function uninstall()
 	{
-		$where = $this->input->post('where');
-		$this->blog_model->update_blog(
-			array(
-				'is_installed' => 0,
-			),
-			$where
-		);
-		echo json_encode(array('code'=>200));
+		$this->load->library('curl');
+		$post = $this->input->post();
+		// check user
+		$owner = $this->owner_model->get_owner('*', array('owner_id' => $post['blog_owner']));
+		if(count($owner->result_array()) < 1)
+		{
+			header('http/1.0 500 User not found!');
+				echo json_encode(array('code'=>500, 'message' => 'User not found'));
+		}else
+		{
+
+			$owner = $owner->row_array();
+			$check_owner_credential = $this->owner_model->check_owner_credential($post['password'], $owner);
+			if(!$check_owner_credential)
+			{
+				header('http/1.0 500 Wrong password');
+				echo json_encode(array('code'=>500, 'message' => 'Wrong Password'));
+			}else
+			{
+				// check blog
+				$blog = $this->blog_model->get_blog('*', $post['where']);
+				if(count($blog->result_array()) < 1)
+				{
+					header('http/1.0 500 blog not found!');
+					echo json_encode(array('code'=>500, 'message' => 'Blog Not found'));
+				}else
+				{
+					$blog = $blog->row_array();
+					$web = rtrim($blog['processing_server'], '/').'/';
+					$web.= 'blog/uninstall';
+					$data = array();
+					if($post['also_remove_blog'] == true)
+					{
+						$data['type'] = 'uninstall';
+						$this->curl->simple_post($web, $data);
+					}else
+					{
+						$data['type'] = 'reset';
+						$this->curl->simple_post($web, $data);
+					}
+
+					// remove blog from owner blog-list
+					if($post['uninstall_all'] == true)
+					{
+						$this->blog_owner->remove_blog($post['where']);
+					}else
+					{
+						// just reset blog data
+						$this->blog_model->update_blog(
+							array(
+								'is_installed' => 0,
+								'blog_server' => '',
+								'processing_server' => '',
+								'processing_server_ip' => '',
+							),
+							$post['where']
+						);
+					}
+					echo json_encode(array('code'=>200, 'message' => 'uninstall complete!', 'data' => $post));
+				}
+			}
+		}
 	}
 
 	public function is_blog_available($u = '', $sys = FALSE)

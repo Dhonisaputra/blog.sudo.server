@@ -93,6 +93,7 @@ class Owner extends CI_Controller
 	public function login()
 	{
 		require_once(APPPATH.'libraries/profiling/Pengguna.php');
+		$auth = new Pengguna;
 		/*$_POST = array(
 				'name' => 'Tanaka Kousei',
 				'password' => 'admin',
@@ -106,7 +107,6 @@ class Owner extends CI_Controller
 			return false;
 		}
 
-		$auth = new Pengguna;
 		$return = $this->owner_model->get_owner('*', array('owner_email' => $post['email']))->result_array();
 		if(count($return) > 0)
 		{

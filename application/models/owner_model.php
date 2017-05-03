@@ -109,6 +109,14 @@ class Owner_model extends CI_Model
 		}
 		return $this->db->get();
 	}
+	public function check_owner_credential($password, $owner)
+	{
+		return $this->auth->password_verify(array(
+				'password' => $password,
+				'encrypted_password' => $owner['owner_password'],
+				'key'=> array($owner['key_A'], $owner['key_B'])
+			));
+	}
 	public function update_owner($update, $where){
 
 		$this->db->where($where);
