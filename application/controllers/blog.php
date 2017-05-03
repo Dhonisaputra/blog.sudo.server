@@ -27,7 +27,7 @@ class Blog extends CI_Controller
 		$key = $this->auth->handshakeKey();
 		$this->db->insert('blogs', array(
 				'blog_name' => $post['data']['blog']['blog_name'],
-				'blog_description' => $post['data']['blog']['blog_description'],
+				'blog_description' => isset($post['data']['blog']['blog_description'])? $post['data']['blog']['blog_description'] : '',
 				'blog_key' => '',
 				'blog_key_A' => $key['key_A'],
 				'blog_key_B' => $key['key_B'],
@@ -154,30 +154,43 @@ class Blog extends CI_Controller
 		$web .= 'install/process_save_settings_database?remote';
 
 		$isUp = $this->curl->simple_post($ping);
-		if($isUp != FALSE)
+		if($isUp !== FALSE || $isUp['code'] == 500)
 		{
 			$isUp = json_decode($isUp,true);
 			$setDB = json_decode($this->curl->simple_post($web, $post['settings']),true);
 			if($setDB == FALSE || $setDB['code'] == 500)
 			{
-				header('http/1.0 500 set database!');
-			}
-			$this->blog_model->update_blog(
-				array(
+				echo $setDB;
+			}else
+			{
+				$this->blog_model->update_blog(
+					array(
 						'processing_server' 	=> $post['settings']['processing_server'],
 						'blog_server' 			=> $post['settings']['blog_server'],
 						'is_installed' 			=> 1,
 						'processing_server_ip' 	=> $isUp['REMOTE_ADDR'],
 						'remote_server' 		=> base_url(),
 					),
-				array('blog_key' => $post['settings']['blog_key']) 
-			);
+					array('blog_key' => $post['settings']['blog_key']) 
+				);
+				echo json_encode(array('code'=>200));
+			}
 		}else
 		{
-				header('http/1.0 500 error on ping!');
-
+			echo json_encode(array('code'=>500, 'message' => 'cant find GoBlog directory in '.$post['settings']['blog_server'].' please check your domain!'));
 		}
 
+	}
+	public function uninstall()
+	{
+		$where = $this->input->post('where');
+		$this->blog_model->update_blog(
+			array(
+				'is_installed' => 0,
+			),
+			$where
+		);
+		echo json_encode(array('code'=>200));
 	}
 
 	public function is_blog_available($u = '', $sys = FALSE)
@@ -228,8 +241,9 @@ class Blog extends CI_Controller
 				);
 			// print_r($post['user']);
 			echo $this->curl->simple_post($web, $post);
-/*			$isDone = json_decode( $this->curl->simple_post($web, $post), true);
-			if($isDone == FALSE || $isDone['code'] == 500)
+
+			// echo $this->curl->simple_post($web, $post), true);
+			/*if($isDone === FALSE || $isDone['code'] == 500)
 			{
 				echo json_encode(array('code'=>500));
 			}else
