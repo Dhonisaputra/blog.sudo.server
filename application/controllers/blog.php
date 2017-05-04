@@ -88,7 +88,7 @@ class Blog extends CI_Controller
 
 	public function component_json_client()
 	{
-		$token = $this->input->get('token');
+		$token = $this->input->post('token');
 		$where = array('blog_key' => $token);
 		$data = $this->blog_model->get_blog('*', $where);
 		if(count($data->result_array()) > 0)
@@ -210,11 +210,21 @@ class Blog extends CI_Controller
 					echo json_encode(array('code'=>500, 'message' => 'Blog Not found'));
 				}else
 				{
+					$advice[] = array(
+						'advice_content' => $post['dev_advice'],
+						'advice_type' => 'developer'
+					);
+					$advice[] = array(
+						'advice_content' => $post['uninstall_advice'],
+						'advice_type' => 'uninstall'
+					);
+					$this->db->insert_batch('costumer_advice', $advice);
+
 					$blog = $blog->row_array();
 					$web = rtrim($blog['processing_server'], '/').'/';
 					$web.= 'blog/uninstall';
 					$data = array();
-					if($post['uninstall_blog'] == true)
+					if($post['uninstall_blog'] == 'true')
 					{
 						$data['type'] = 'uninstall';
 						$this->curl->simple_post($web, $data);
@@ -225,7 +235,7 @@ class Blog extends CI_Controller
 					}
 
 					// remove blog from owner blog-list
-					if($post['uninstall_all'] == true)
+					if($post['uninstall_all'] == 'true')
 					{
 						$this->blog_model->remove_blog($post['where']);
 					}else
@@ -241,6 +251,8 @@ class Blog extends CI_Controller
 							$post['where']
 						);
 					}
+					
+
 					echo json_encode(array('code'=>200, 'message' => 'uninstall complete!', 'data' => $post));
 				}
 			}
