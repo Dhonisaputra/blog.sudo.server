@@ -76,6 +76,8 @@ class Authentication extends CI_Model
 		$token_id = $this->db->insert_id();
 		$uniqid = uniqid($token_id,true);
 		$token = $this->auth->encrypt($token_id, $public, $uniqid,true);
+
+		$this->db->where('id_token', $token_id);
 		$this->db->update('generated_token', array('api_key' => $uniqid, 'token' => $token));
 		return array('token' => $token);
 	}
